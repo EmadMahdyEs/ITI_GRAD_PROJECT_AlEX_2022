@@ -123,137 +123,16 @@ void CAN_voidTransmitDataFrame(u32 copy_u32MessageID,u8 *copy_u8DataBytes,u8 cop
 		local_u16ExtendedId = copy_u32MessageID & CAN_EXTENDED_ID_MASK;
 		break;
 	}
-
-	/*check if the transmission mailbox 0 is empty to use*/
-	if( ((CAN_REG->TSR)&0x03000000)== 0 )
+	/*search for all 3 mailbox if one of themis empty to use in transmission */
+	for (u8 local_u8Iterator=0;local_u8Iterator<3;local_u8Iterator++)
 	{
-		//set the ID, IDE and RTR
-		CAN_REG->TI0R = (local_u16StandardId<<CAN_STANDARD_ID_BIT) | (local_u16ExtendedId<<CAN_EXTENDED_ID_BIT)|
-						(copy_u8IDE<<CAN_IDE_BIT) | (CAN_RTR_DATA_FRAME<<CAN_RTR_BIT);
-		//disable time stamp
-		CAN_REG->TDT0R &=~ (1<<8);
-
-		//check if the number of bytes is equal or less than 4 bytes
-		if(copy_u8DataLength<=4)
+		if (isMailBoxEmpty(local_u8Iterator))
 		{
-			//set DLC bits
-			CAN_REG->TDT0R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<copy_u8DataLength;i++)
-			{
-				CAN_REG->TDL0R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
+			CAN_MailboxTransmit(local_u8Iterator);			
 		}
-		//check if the number of bytes is equal or less than 8 bytes
-		else if(copy_u8DataLength>=5 && copy_u8DataLength<=8)
-		{
-			//set DLC bits
-			CAN_REG->TDT0R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<4;i++)
-			{
-				CAN_REG->TDL0R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
-			for(u8 i=4;i<copy_u8DataLength;i++)
-			{
-				CAN_REG->TDH0R |=( (copy_u8DataBytes[i])<< ( (i-4) *8) );
-			}
-		}
-		else
-		{
-			//don't continue to generate an interrupt request if the data length sent exceeds 8 bytes
-			return;
-		}
-		//generate transmit request
-		CAN_REG->TI0R |=(1<<CAN_TRANSMIT_RQ_BIT);
-	}
-	/*check if the transmission mailbox 1 is empty to use*/
-	else if( ((CAN_REG->TSR)&0x03000000)== 1)
-	{
-		//set the ID, IDE and RTR
-		CAN_REG->TI1R = (local_u16StandardId<<CAN_STANDARD_ID_BIT) | (local_u16ExtendedId<<CAN_EXTENDED_ID_BIT)|
-						(copy_u8IDE<<CAN_IDE_BIT) | (CAN_RTR_DATA_FRAME<<CAN_RTR_BIT);
-		//disable time stamp
-		CAN_REG->TDT1R &=~ (1<<8);
-
-		//check if the number of bytes is equal or less than 4 bytes
-		if(copy_u8DataLength<=4)
-		{
-			//set DLC bits
-			CAN_REG->TDT1R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<4;i++)
-			{
-				CAN_REG->TDL1R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
-		}
-		//check if the number of bytes is equal or less than 8 bytes
-		else if(copy_u8DataLength>=5 && copy_u8DataLength<=8)
-		{
-			//set DLC bits
-			CAN_REG->TDT1R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<4;i++)
-			{
-				CAN_REG->TDL1R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
-			for(u8 i=4;i<8;i++)
-			{
-				CAN_REG->TDH1R |=( (copy_u8DataBytes[i])<< ( (i-4) *8) );
-			}
-		}
-		else
-		{
-			//don't continue to generate an interrupt request if the data length sent exceeds 8 bytes
-			return;
-		}
-		//generate transmit request
-		CAN_REG->TI1R |=(1<<CAN_TRANSMIT_RQ_BIT);
-	}
-	/*check if the transmission mailbox 2 is empty to use*/
-	else if( ((CAN_REG->TSR)&0x03000000)== 2)
-	{
-		//set the ID, IDE and RTR
-		CAN_REG->TI2R = (local_u16StandardId<<CAN_STANDARD_ID_BIT) | (local_u16ExtendedId<<CAN_EXTENDED_ID_BIT)|
-						(copy_u8IDE<<CAN_IDE_BIT) | (CAN_RTR_DATA_FRAME<<CAN_RTR_BIT);
-		//disable time stamp
-		CAN_REG->TDT2R &=~ (1<<8);
-
-		//check if the number of bytes is equal or less than 4 bytes
-		if(copy_u8DataLength<=4)
-		{
-			//set DLC bits
-			CAN_REG->TDT2R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<4;i++)
-			{
-				CAN_REG->TDL2R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
-		}
-		//check if the number of bytes is equal or less than 8 bytes
-		else if(copy_u8DataLength>=5 && copy_u8DataLength<=8)
-		{
-			//set DLC bits
-			CAN_REG->TDT2R |= ( copy_u8DataLength << CAN_DLC_BIT );
-			//put the data to be sent
-			for(u8 i=0;i<4;i++)
-			{
-				CAN_REG->TDL2R |=( (copy_u8DataBytes[i])<< (i*8) );
-			}
-			for(u8 i=4;i<8;i++)
-			{
-				CAN_REG->TDH2R |=( (copy_u8DataBytes[i])<< ( (i-4) *8) );
-			}
-		}
-		else
-		{
-			//don't continue to generate an interrupt request if the data length sent exceeds 8 bytes
-			return;
-		}
-		//generate transmit request
-		CAN_REG->TI2R |=(1<<CAN_TRANSMIT_RQ_BIT);
 	}
 }
+
 
 /*
 void CAN_voidAddMessageId(u32 copy_u32MessageId, u8 copy)
@@ -328,7 +207,59 @@ void CAN1_RX0_IRQHandler(void)
 	CAN_PTR2func();
 }
 
+/*private function definition (implemention)*/
 
+static u8 isMailBoxEmpty(u8 copy_u8Mail_box_id)
+{
+	u8 local_ret=0;
+	if( ((CAN_REG->TSR)&0x03000000)== copy_u8Mail_box_id )
+	{
+		local_ret=1;
+	}
+	return local_ret;
+}
 
+static void CAN_MailboxTransmit(u8 copy_u8Mail_box_id)
+{
+	CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].
+	//set the ID, IDE and RTR
+		CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TIR = (local_u16StandardId<<CAN_STANDARD_ID_BIT) | (local_u16ExtendedId<<CAN_EXTENDED_ID_BIT)|
+						(copy_u8IDE<<CAN_IDE_BIT) | (CAN_RTR_DATA_FRAME<<CAN_RTR_BIT);
+		//disable time stamp
+		CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDTR &=~ (1<<8);
 
+		//check if the number of bytes is equal or less than 4 bytes
+		if(copy_u8DataLength<=4)
+		{
+			//set DLC bits
+			CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDTR |= ( copy_u8DataLength << CAN_DLC_BIT );
+			//put the data to be sent
+			for(u8 i=0;i<copy_u8DataLength;i++)
+			{
+				CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDLR |=( (copy_u8DataBytes[i])<< (i*8) );
+			}
+		}
+		//check if the number of bytes is equal or less than 8 bytes
+		else if(copy_u8DataLength>=5 && copy_u8DataLength<=8)
+		{
+			//set DLC bits
+			CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDTR |= ( copy_u8DataLength << CAN_DLC_BIT );
+			//put the data to be sent
+			for(u8 i=0;i<4;i++)
+			{
+				CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDLR |=( (copy_u8DataBytes[i])<< (i*8) );
+			}
+			for(u8 i=4;i<copy_u8DataLength;i++)
+			{
+				CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TDHR |=( (copy_u8DataBytes[i])<< ( (i-4) *8) );
+			}
+		}
+		else
+		{
+			//don't continue to generate an interrupt request if the data length sent exceeds 8 bytes
+			return;
+		}
+		//generate transmit request
+		CAN_REG->CAN_transmit_mailbox[copy_u8Mail_box_id].TIR |=(1<<CAN_TRANSMIT_RQ_BIT);
+}
 

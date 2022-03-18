@@ -8,11 +8,24 @@
 #ifndef CAN_PRIVATE_H_
 #define CAN_PRIVATE_H_
 
+
+#define MAIL_BOX_0_ID	0
+#define MAIL_BOX_1_ID	1
+#define MAIL_BOX_2_ID	2
+
 typedef struct
 {
 	volatile u32 FR[2];
 
 }Filters_Struct;
+
+typedef struct
+{
+	volatile u32 TIR;
+	volatile u32 TDTR;
+	volatile u32 TDLR;
+	volatile u32 TDHR;
+}CAN_transmit_mailbox_reg_t;
 
 #define CAN_REG 		( (volatile CanRegx*)0x40006400 )
 typedef struct
@@ -28,20 +41,7 @@ typedef struct
 
 	volatile u32 RESERVED0[88];
 
-	volatile u32 TI0R;
-	volatile u32 TDT0R;
-	volatile u32 TDL0R;
-	volatile u32 TDH0R;
-
-	volatile u32 TI1R;
-	volatile u32 TDT1R;
-	volatile u32 TDL1R;
-	volatile u32 TDH1R;
-
-	volatile u32 TI2R;
-	volatile u32 TDT2R;
-	volatile u32 TDL2R;
-	volatile u32 TDH2R;
+	CAN_transmit_mailbox_reg_t CAN_transmit_mailbox[3];
 
 	volatile u32 RI0R;
 	volatile u32 RDT0R;
@@ -72,12 +72,14 @@ typedef struct
 
 	volatile u32 RESERVED5[8];
 
-	volatile Filters_Struct* Filters[14];
+	volatile Filters_Struct Filters[14];
 
 }CanRegx;
 
-
-
+/**************************************************/
+static u8 isMailBoxEmpty(u8 copy_u8Mail_box_id);
+static void CAN_MailboxTransmit(u8 copy_u8Mail_box_id);
+/*************************************************/
 
 
 /***********************************************CAN_MCR register bits*****************************************************/
